@@ -1,54 +1,82 @@
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name="BasicTeleOp", group="TeleOp")
+@com.qualcomm.robotcore.eventloop.opmode.TeleOp(name="BasicTeleOp", group="TeleOp")
 public class BasicTeleOp extends OpMode {
 
-    // Declare motor variables for drive and arm
-    private DcMotor frontLeft;
-    private DcMotor frontRight;
-    private DcMotor backLeft;
-    private DcMotor backRight;
+    private Servo armServo = null;
+    private Servo intakeServo = null;
+    private DcMotor frontLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backLeft = null;
+    private DcMotor backRight = null;
     private DcMotor mainArm;
 
+    // Runs once when the OpMode starts
     @Override
     public void init() {
-        // Initialize the motors using the hardware map
-        frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
-        backLeft = hardwareMap.get(DcMotor.class, "backLeft");
-        backRight = hardwareMap.get(DcMotor.class, "backRight");
+        // Map the motors to their configuration names in the Control Hub
+        frontLeft = hardwareMap.get(DcMotor.class,"frontLeft");
+        frontRight = hardwareMap.get(DcMotor.class,"frontRight");
+        backLeft = hardwareMap.get(DcMotor.class,"backLeft");
+        backRight = hardwareMap.get(DcMotor.class,"backRight");
         mainArm = hardwareMap.get(DcMotor.class, "mainArm");
 
-        // Set the direction for the motors, adjust if needed for your setup
-        frontLeft.setDirection(DcMotor.Direction.FORWARD);
-        frontRight.setDirection(DcMotor.Direction.FORWARD);
-        backLeft.setDirection(DcMotor.Direction.FORWARD);
-        backRight.setDirection(DcMotor.Direction.FORWARD);
+        // Servos
+      //  armServo = hardwareMap.get(Servo.class, "armServo");
+      // intakeServo = hardwareMap.get(Servo.class, "intakeServo");
+
+        // Set the right-side motors to reverse direction
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
         mainArm.setDirection(DcMotor.Direction.FORWARD);
     }
 
     @Override
     public void loop() {
-        // Tank drive control using left and right joysticks
-        double leftPower = -gamepad1.left_stick_y; // Left side power (forward/backward)
-        double rightPower = -gamepad1.right_stick_y; // Right side power (forward/backward)
+        // Get joystick inputs
+        double y = -gamepad1.left_stick_y; // Forward/backward movement
+        double x = gamepad1.left_stick_x * 1.1; // Strafing movement, adjusted for more accurate strafing
+        double turn = gamepad1.right_stick_x; // Rotation
         // Arm control using RT and LT triggers
         double armPower = gamepad1.right_trigger - gamepad1.left_trigger;
         mainArm.setPower(armPower);
 
-        // Set power to each motor
-        frontLeft.setPower(leftPower);
-        backLeft.setPower(rightPower);
-        frontRight.setPower(rightPower);
-        backRight.setPower(leftPower);
+        // Calculate motor powers based on Mecanum drive formulas
+        double leftFrontPower = y + x + turn;
+        double rightFrontPower = y - x - turn;
+        double leftRearPower = y - x + turn;
+        double rightRearPower = y + x - turn;
 
-        // Telemetry data to show motor powers on the driver station
-        telemetry.addData("Left Power", leftPower);
-        telemetry.addData("Right Power", rightPower);
-        telemetry.addData("Arm Power", armPower);
-        telemetry.update();
+        // Normalize powers if any power is outside the range [-1, 1]
+        double maxPower = Math.max(1.0, Math.max(
+                Math.abs(leftFrontPower),
+                Math.max(Math.abs(rightFrontPower), Math.max(Math.abs(leftRearPower), Math.abs(rightRearPower)))
+        ));
+
+        leftFrontPower /= maxPower;
+        rightFrontPower /= maxPower;
+        leftRearPower /= maxPower;
+        rightRearPower /= maxPower;
+
+        // Set the motor powers
+        frontLeft.setPower(leftFrontPower);
+        frontRight.setPower(rightFrontPower);
+        backLeft.setPower(leftRearPower);
+        backRight.setPower(rightRearPower);
+
+        // Servo control
+        if (gamepad1.a) {
+      //      armServo.setPosition(1.0); // Fully open the servo
+        } else if (gamepad1.b) {
+      //      armServo.setPosition(0.0); // Fully close the servo
+        }
+        if (gamepad1.x) {
+       //     intakeServo.setPosition(1.0); // Fully open the servo
+        } else if (gamepad1.y) {
+        //    intakeServo.setPosition(0.0); // Fully close the servo
+        }
     }
 }
