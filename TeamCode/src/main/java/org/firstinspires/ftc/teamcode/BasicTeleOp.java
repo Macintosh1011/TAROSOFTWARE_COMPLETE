@@ -43,12 +43,12 @@ public class BasicTeleOp extends OpMode {
     @Override
     public void loop() {
         // Joystick inputs for driving
-        double y = -gamepad1.left_stick_y; // Forward/backward movement
-        double x = gamepad1.left_stick_x * 1.1; // Strafing movement
+        double y = -gamepad1.left_stick_y; // Forward/backward (negated to align joystick input with direction)
+        double x = gamepad1.left_stick_x * 1.1; // Strafing (scaled for better control)
         double turn = gamepad1.right_stick_x; // Rotation
 
         // Arm control using right and left triggers
-        double armPower = gamepad1.right_trigger - gamepad1.left_trigger;
+        double armPower = gamepad2.right_trigger - gamepad2.left_trigger;
         mainArm.setPower(armPower);
 
         // Mecanum drive calculations
@@ -75,16 +75,16 @@ public class BasicTeleOp extends OpMode {
         backRight.setPower(rightRearPower);
 
         // Continuous servo adjustment based on button hold
-        if (gamepad1.a) {
+        if (gamepad2.a) {
             armServoPosition = Math.min(armServoPosition + SERVO_INCREMENT, 1.0); // Increment while holding "a"
         }
-        if (gamepad1.b) {
+        if (gamepad2.b) {
             armServoPosition = Math.max(armServoPosition - SERVO_INCREMENT, 0.0); // Decrement while holding "b"
         }
-        if (gamepad1.x) {
+        if (gamepad2.x) {
             intakeServoPosition = Math.min(intakeServoPosition + SERVO_INCREMENT, 1.0); // Increment while holding "x"
         }
-        if (gamepad1.y) {
+        if (gamepad2.y) {
             intakeServoPosition = Math.max(intakeServoPosition - SERVO_INCREMENT, 0.0); // Decrement while holding "y"
         }
 
@@ -97,12 +97,13 @@ public class BasicTeleOp extends OpMode {
         }
 
         // Telemetry for debugging
-        telemetry.addData("Arm Servo Position", armServoPosition);
-        telemetry.addData("Intake Servo Position", intakeServoPosition);
-        telemetry.addData("a Button Pressed", gamepad1.a);
-        telemetry.addData("b Button Pressed", gamepad1.b);
-        telemetry.addData("x Button Pressed", gamepad1.x);
-        telemetry.addData("y Button Pressed", gamepad1.y);
+        telemetry.addData("Left Joystick (y)", y);
+        telemetry.addData("Left Joystick (x)", x);
+        telemetry.addData("Right Joystick (turn)", turn);
+        telemetry.addData("Front Left Power", leftFrontPower);
+        telemetry.addData("Front Right Power", rightFrontPower);
+        telemetry.addData("Back Left Power", leftRearPower);
+        telemetry.addData("Back Right Power", rightRearPower);
         telemetry.update();
     }
 }
